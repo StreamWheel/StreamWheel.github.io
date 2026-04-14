@@ -1,0 +1,1216 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<!-- Stream Wheel -->
+<!-- A nice solution for making spinning wheels on streams through OBS -->
+<!-- By StreamWheelDev -->
+<!-- Licensed under the MIT License. Full text as follows: -->
+<!--
+MIT License
+
+Copyright (c) 2026 StreamWheelDev
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+-->
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Stream Wheel Configurator</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{
+  --bg:#0c0c18;--surface:#161628;--surface2:#1e1e36;--surface3:#282848;
+  --border:#2a2a4a;--text:#e4e4f0;--text2:#9898b8;--accent:#00d4ff;
+  --accent2:#ff3366;--accent3:#aa66ff;--success:#00cc88;--warn:#ffaa00;
+  --radius:8px;--font:system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;--mono:ui-monospace,'Cascadia Code','Consolas',monospace;
+}
+html,body{height:100%;font-family:var(--font);background:var(--bg);color:var(--text);overflow:hidden}
+button{font-family:var(--font);cursor:pointer;border:none;outline:none;transition:all .15s}
+input,select,textarea{font-family:var(--font);background:var(--surface3);color:var(--text);border:1px solid var(--border);border-radius:var(--radius);padding:8px 12px;outline:none;transition:border-color .15s}
+input:focus,select:focus{border-color:var(--accent)}
+input[type="color"]{padding:2px;width:40px;height:36px;cursor:pointer}
+label{font-size:13px;color:var(--text2);font-weight:500;display:block;margin-bottom:4px}
+
+.app{display:flex;flex-direction:column;height:100vh}
+
+/* HEADER */
+.header{display:flex;align-items:center;justify-content:space-between;padding:12px 20px;background:var(--surface);border-bottom:1px solid var(--border);flex-shrink:0}
+.header h1{font-size:18px;font-weight:600;display:flex;align-items:center;gap:10px}
+.header h1 span{background:linear-gradient(135deg,var(--accent),var(--accent3));-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.header-actions{display:flex;gap:8px}
+.btn{padding:8px 16px;border-radius:var(--radius);font-weight:500;font-size:13px;display:flex;align-items:center;gap:6px}
+.btn-primary{background:var(--accent);color:#000}
+.btn-primary:hover{background:#33ddff;transform:translateY(-1px)}
+.btn-secondary{background:var(--surface3);color:var(--text);border:1px solid var(--border)}
+.btn-secondary:hover{border-color:var(--accent);color:var(--accent)}
+.btn-danger{background:rgba(255,51,102,.15);color:var(--accent2);border:1px solid rgba(255,51,102,.3)}
+.btn-danger:hover{background:rgba(255,51,102,.25)}
+.btn-sm{padding:5px 10px;font-size:12px}
+.btn-icon{width:32px;height:32px;padding:0;display:flex;align-items:center;justify-content:center;border-radius:6px;background:var(--surface3);color:var(--text2);border:1px solid var(--border);font-size:14px}
+.btn-icon:hover{color:var(--accent);border-color:var(--accent)}
+
+/* MAIN LAYOUT */
+.main{display:flex;flex:1;overflow:hidden}
+
+/* LEFT PANEL */
+.panel{width:340px;flex-shrink:0;background:var(--surface);border-right:1px solid var(--border);display:flex;flex-direction:column;overflow:hidden}
+.tabs{display:flex;border-bottom:1px solid var(--border);flex-shrink:0}
+.tab{flex:1;padding:10px;text-align:center;font-size:13px;font-weight:500;color:var(--text2);cursor:pointer;border-bottom:2px solid transparent;transition:all .15s}
+.tab:hover{color:var(--text)}
+.tab.active{color:var(--accent);border-bottom-color:var(--accent)}
+.panel-content{flex:1;overflow-y:auto;padding:16px}
+.panel-content::-webkit-scrollbar{width:6px}
+.panel-content::-webkit-scrollbar-thumb{background:var(--surface3);border-radius:3px}
+
+/* SEGMENT LIST */
+.seg-list{display:flex;flex-direction:column;gap:8px}
+.seg-item{background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;transition:border-color .15s}
+.seg-item:hover{border-color:var(--accent)}
+.seg-item.editing{border-color:var(--accent3)}
+.seg-header{display:flex;align-items:center;gap:10px;padding:10px 12px;cursor:pointer}
+.seg-color{width:24px;height:24px;border-radius:4px;flex-shrink:0;border:2px solid rgba(255,255,255,.15)}
+.seg-thumb{width:32px;height:32px;border-radius:4px;flex-shrink:0;object-fit:cover;background:var(--surface3);display:flex;align-items:center;justify-content:center;font-size:11px;color:var(--text2)}
+.seg-thumb img{width:100%;height:100%;object-fit:cover;border-radius:4px}
+.seg-name{flex:1;font-size:14px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.seg-actions{display:flex;gap:4px}
+.seg-edit{padding:10px 12px;display:flex;flex-direction:column;gap:10px;border-top:1px solid var(--border);background:rgba(0,0,0,.15)}
+.seg-edit .field{display:flex;flex-direction:column;gap:4px}
+.seg-edit .field-row{display:flex;gap:8px;align-items:end}
+.seg-edit .field-row > *{flex:1}
+.seg-edit input[type="text"]{width:100%}
+.img-upload{display:flex;align-items:center;gap:8px}
+.img-upload-btn{padding:8px 12px;background:var(--surface3);border:1px dashed var(--border);border-radius:var(--radius);color:var(--text2);font-size:12px;cursor:pointer;transition:all .15s;text-align:center;flex:1}
+.img-upload-btn:hover{border-color:var(--accent);color:var(--accent)}
+.img-preview{width:48px;height:48px;border-radius:6px;object-fit:cover;border:1px solid var(--border)}
+.add-seg{width:100%;margin-top:8px;padding:10px;background:transparent;border:1px dashed var(--border);border-radius:var(--radius);color:var(--text2);font-size:13px;font-weight:500;display:flex;align-items:center;justify-content:center;gap:6px}
+.add-seg:hover{border-color:var(--accent);color:var(--accent)}
+
+/* SETTINGS PANEL */
+.settings-group{margin-bottom:20px}
+.settings-group h3{font-size:13px;font-weight:600;color:var(--accent);text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px}
+.setting-row{display:flex;flex-direction:column;gap:4px;margin-bottom:12px}
+.setting-row.inline{flex-direction:row;align-items:center;justify-content:space-between}
+.setting-row.inline label{margin-bottom:0}
+.setting-row input[type="range"]{width:100%;accent-color:var(--accent)}
+.range-val{font-family:var(--mono);font-size:12px;color:var(--accent);min-width:40px;text-align:right}
+.setting-row select{width:100%}
+.checkbox-row{display:flex;align-items:center;gap:8px;cursor:pointer}
+.checkbox-row input[type="checkbox"]{accent-color:var(--accent);width:16px;height:16px}
+.hint{font-size:11px;color:var(--text2);margin-top:2px;line-height:1.4}
+
+/* PREVIEW */
+.preview-area{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:20px;position:relative;background:repeating-conic-gradient(var(--surface2) 0% 25%, var(--bg) 0% 50%) 50% / 20px 20px}
+.preview-canvas-wrap{position:relative;display:flex;align-items:center;justify-content:center}
+#previewCanvas{max-width:100%;max-height:100%}
+.preview-controls{position:absolute;bottom:20px;display:flex;gap:8px}
+.winner-display{position:absolute;top:20px;background:rgba(0,0,0,.85);backdrop-filter:blur(10px);padding:10px 24px;border-radius:var(--radius);font-size:18px;font-weight:600;color:var(--accent);border:1px solid var(--accent);opacity:0;transition:opacity .3s;pointer-events:none}
+.winner-display.show{opacity:1}
+
+/* HIDDEN FILE INPUTS */
+.hidden{display:none}
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="header">
+    <h1><span>Stream Wheel Builder</span></h1>
+    <div class="header-actions">
+      <button class="btn btn-secondary" onclick="importWheel()">Load Wheel</button>
+      <button class="btn btn-primary" onclick="exportWheel()">Export Wheel</button>
+    </div>
+  </div>
+  <div class="main">
+    <div class="panel">
+      <div class="tabs">
+        <div class="tab active" data-tab="segments" onclick="switchTab('segments')">Segments</div>
+        <div class="tab" data-tab="settings" onclick="switchTab('settings')">Settings</div>
+      </div>
+      <div class="panel-content" id="panelContent"></div>
+    </div>
+    <div class="preview-area">
+      <div class="preview-canvas-wrap">
+        <canvas id="previewCanvas" width="520" height="520"></canvas>
+      </div>
+      <div class="winner-display" id="winnerDisplay"></div>
+      <div class="preview-controls">
+        <button class="btn btn-primary" onclick="testSpin()">Test Spin</button>
+        <button class="btn btn-secondary" onclick="resetWheel()">↺ Reset</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<input type="file" id="imgInput" class="hidden" accept="image/*">
+<input type="file" id="centerImgInput" class="hidden" accept="image/*">
+<input type="file" id="tickSoundInput" class="hidden" accept=".mp3,.ogg,audio/*">
+<input type="file" id="winSoundInput" class="hidden" accept=".mp3,.ogg,audio/*">
+<input type="file" id="importInput" class="hidden" accept=".html">
+
+<script>
+// ===================== STATE =====================
+let segments = [
+  { name: 'Option 1', color: '#e63946', image: null },
+  { name: 'Option 2', color: '#457b9d', image: null },
+  { name: 'Option 3', color: '#e63946', image: null },
+  { name: 'Option 4', color: '#457b9d', image: null },
+];
+let config = {
+  triggerMode: 'load',       // 'load', 'visibility', 'both'
+  spinDelay: 500,            // ms before spin starts
+  spinDuration: 5000,        // ms for spin animation
+  minRotations: 5,
+  maxRotations: 10,
+  pointerPosition: 'right',  // 'right','top','left','bottom'
+  showWinner: true,
+  winnerDuration: 4000,      // ms to show winner
+  borderWidth: 2,
+  centerColor: '#ffffff',
+  centerText: '',
+  centerImage: null,
+  wheelBorderColor: '#ffffff',
+  segBorderColor: 'rgba(255,255,255,0.25)',
+  useAlternatingColors: true,
+  color1: '#e63946',
+  color2: '#457b9d',
+  pointerColor: '#ffffff',
+  pointerBorderColor: '#000000',
+  winnerBgColor: 'rgba(0,0,0,0.85)',
+  winnerTextColor: '#00d4ff',
+  winnerFontSize: 48,
+  tickSound: null,
+  winSound: null,
+  tickVolume: 0.5,
+  winVolume: 0.8,
+};
+
+let activeTab = 'segments';
+let editingIndex = -1;
+let currentImgTarget = -1;
+let previewRotation = 0;
+let isSpinning = false;
+let loadedImages = {};
+let centerImageObj = null;
+let animFrameId = null;
+let tickAudioPool = [];
+let tickPoolIdx = 0;
+let winAudio = null;
+let lastTickSeg = -1;
+
+const canvas = document.getElementById('previewCanvas');
+const ctx = canvas.getContext('2d');
+const winnerEl = document.getElementById('winnerDisplay');
+
+// ===================== TAB SWITCHING =====================
+function switchTab(tab) {
+  activeTab = tab;
+  document.querySelectorAll('.tab').forEach(t => t.classList.toggle('active', t.dataset.tab === tab));
+  renderPanel();
+}
+
+// ===================== PANEL RENDERING =====================
+function renderPanel() {
+  const el = document.getElementById('panelContent');
+  if (activeTab === 'segments') renderSegmentsPanel(el);
+  else renderSettingsPanel(el);
+}
+
+function renderSegmentsPanel(container) {
+  let html = '<div class="seg-list">';
+  segments.forEach((seg, i) => {
+    const isEditing = editingIndex === i;
+    const thumbHtml = seg.image
+      ? `<div class="seg-thumb"><img src="${seg.image}" alt=""></div>`
+      : `<div class="seg-thumb">--</div>`;
+    html += `
+    <div class="seg-item ${isEditing ? 'editing' : ''}">
+      <div class="seg-header" onclick="toggleEdit(${i})">
+        <div class="seg-color" style="background:${seg.color}"></div>
+        ${thumbHtml}
+        <div class="seg-name">${esc(seg.name)}</div>
+        <div class="seg-actions">
+          <button class="btn-icon" onclick="event.stopPropagation();moveSeg(${i},-1)" title="Move up" ${i===0?'disabled':''}>↑</button>
+          <button class="btn-icon" onclick="event.stopPropagation();moveSeg(${i},1)" title="Move down" ${i===segments.length-1?'disabled':''}>↓</button>
+          <button class="btn-icon" onclick="event.stopPropagation();removeSeg(${i})" title="Remove" style="color:var(--accent2)">✕</button>
+        </div>
+      </div>
+      ${isEditing ? renderSegEdit(seg, i) : ''}
+    </div>`;
+  });
+  html += '</div>';
+  html += `<button class="add-seg" onclick="addSegment()">+ Add Segment</button>`;
+  container.innerHTML = html;
+}
+
+function renderSegEdit(seg, i) {
+  const imgPreview = seg.image ? `<img class="img-preview" src="${seg.image}" alt="">` : '';
+  return `
+  <div class="seg-edit">
+    <div class="field">
+      <label>Name</label>
+      <input type="text" value="${esc(seg.name)}" oninput="updateSeg(${i},'name',this.value)" placeholder="Segment name">
+    </div>
+    <div class="field-row">
+      <div class="field">
+        <label>Color</label>
+        <input type="color" value="${seg.color}" oninput="updateSeg(${i},'color',this.value)">
+      </div>
+    </div>
+    <div class="field">
+      <label>Image</label>
+      <div class="img-upload">
+        ${imgPreview}
+        <div class="img-upload-btn" onclick="triggerImgUpload(${i})">${seg.image ? 'Change Image' : '+ Upload Image'}</div>
+        ${seg.image ? `<button class="btn btn-sm btn-danger" onclick="clearImage(${i})">✕</button>` : ''}
+      </div>
+      <div class="hint">PNG/JPG, ideally square. Will be resized to 256px.</div>
+    </div>
+  </div>`;
+}
+
+function renderSettingsPanel(container) {
+  container.innerHTML = `
+  <div class="settings-group">
+    <h3>Trigger</h3>
+    <div class="setting-row">
+      <label>Spin Trigger Mode</label>
+      <select value="${config.triggerMode}" onchange="updateConfig('triggerMode',this.value)">
+        <option value="load" ${config.triggerMode==='load'?'selected':''}>Spin on Page Load (refresh source)</option>
+        <option value="visibility" ${config.triggerMode==='visibility'?'selected':''}>Spin on Source Show (toggle visibility)</option>
+        <option value="both" ${config.triggerMode==='both'?'selected':''}>Both (load + visibility)</option>
+      </select>
+    </div>
+    <div class="setting-row">
+      <label>Delay Before Spin: <span class="range-val">${config.spinDelay}ms</span></label>
+      <input type="range" min="0" max="3000" step="100" value="${config.spinDelay}" oninput="updateConfig('spinDelay',+this.value);this.previousElementSibling.querySelector('.range-val').textContent=this.value+'ms'">
+    </div>
+  </div>
+
+  <div class="settings-group">
+    <h3>Animation</h3>
+    <div class="setting-row">
+      <label>Spin Duration: <span class="range-val">${(config.spinDuration/1000).toFixed(1)}s</span></label>
+      <input type="range" min="1000" max="15000" step="500" value="${config.spinDuration}" oninput="updateConfig('spinDuration',+this.value);this.previousElementSibling.querySelector('.range-val').textContent=(this.value/1000).toFixed(1)+'s'">
+    </div>
+    <div class="setting-row">
+      <label>Min Rotations: <span class="range-val">${config.minRotations}</span></label>
+      <input type="range" min="2" max="15" step="1" value="${config.minRotations}" oninput="updateConfig('minRotations',+this.value);this.previousElementSibling.querySelector('.range-val').textContent=this.value">
+    </div>
+    <div class="setting-row">
+      <label>Max Rotations: <span class="range-val">${config.maxRotations}</span></label>
+      <input type="range" min="3" max="25" step="1" value="${config.maxRotations}" oninput="updateConfig('maxRotations',+this.value);this.previousElementSibling.querySelector('.range-val').textContent=this.value">
+    </div>
+  </div>
+
+  <div class="settings-group">
+    <h3>Appearance</h3>
+    <div class="setting-row">
+      <label>Pointer Position</label>
+      <select onchange="updateConfig('pointerPosition',this.value)">
+        <option value="right" ${config.pointerPosition==='right'?'selected':''}>Right</option>
+        <option value="top" ${config.pointerPosition==='top'?'selected':''}>Top</option>
+        <option value="left" ${config.pointerPosition==='left'?'selected':''}>Left</option>
+        <option value="bottom" ${config.pointerPosition==='bottom'?'selected':''}>Bottom</option>
+      </select>
+    </div>
+    <div class="setting-row inline">
+      <label>Use Alternating Colors</label>
+      <input type="checkbox" ${config.useAlternatingColors?'checked':''} onchange="updateConfig('useAlternatingColors',this.checked)">
+    </div>
+    ${config.useAlternatingColors ? `
+    <div class="setting-row field-row" style="display:flex;gap:8px">
+      <div><label>Color A</label><input type="color" value="${config.color1}" oninput="updateConfig('color1',this.value)"></div>
+      <div><label>Color B</label><input type="color" value="${config.color2}" oninput="updateConfig('color2',this.value)"></div>
+    </div>` : ''}
+    <div class="setting-row field-row" style="display:flex;gap:8px">
+      <div><label>Pointer</label><input type="color" value="${config.pointerColor}" oninput="updateConfig('pointerColor',this.value)"></div>
+      <div><label>Ptr Border</label><input type="color" value="${config.pointerBorderColor}" oninput="updateConfig('pointerBorderColor',this.value)"></div>
+      <div><label>Center</label><input type="color" value="${config.centerColor}" oninput="updateConfig('centerColor',this.value)"></div>
+    </div>
+    <div class="setting-row">
+      <label>Center Image</label>
+      <div class="img-upload">
+        ${config.centerImage ? `<img class="img-preview" style="border-radius:50%" src="${config.centerImage}" alt="">` : ''}
+        <div class="img-upload-btn" onclick="triggerCenterImgUpload()">${config.centerImage ? 'Change Image' : '+ Upload Image'}</div>
+        ${config.centerImage ? `<button class="btn btn-sm btn-danger" onclick="clearCenterImage()">✕</button>` : ''}
+      </div>
+      <div class="hint">Replaces center circle. Clipped to a circle automatically. Text still overlays if set.</div>
+    </div>
+    <div class="setting-row">
+      <label>Center Text</label>
+      <input type="text" value="${esc(config.centerText)}" oninput="updateConfig('centerText',this.value)" placeholder="e.g. :) or ?" maxlength="4">
+    </div>
+    <div class="setting-row">
+      <label>Segment Border Color</label>
+      <input type="color" value="${rgbaToHex(config.segBorderColor)}" oninput="updateConfig('segBorderColor',this.value)">
+    </div>
+    <div class="setting-row">
+      <label>Segment Border Width: <span class="range-val">${config.borderWidth}px</span></label>
+      <input type="range" min="0" max="6" step="1" value="${config.borderWidth}" oninput="updateConfig('borderWidth',+this.value);this.previousElementSibling.querySelector('.range-val').textContent=this.value+'px'">
+    </div>
+  </div>
+
+  <div class="settings-group">
+    <h3>Winner Display</h3>
+    <div class="setting-row inline">
+      <label>Show Winner Name</label>
+      <input type="checkbox" ${config.showWinner?'checked':''} onchange="updateConfig('showWinner',this.checked)">
+    </div>
+    <div class="setting-row">
+      <label>Winner Display Duration: <span class="range-val">${(config.winnerDuration/1000).toFixed(1)}s</span></label>
+      <input type="range" min="1000" max="15000" step="500" value="${config.winnerDuration}" oninput="updateConfig('winnerDuration',+this.value);this.previousElementSibling.querySelector('.range-val').textContent=(this.value/1000).toFixed(1)+'s'">
+    </div>
+    <div class="setting-row field-row" style="display:flex;gap:8px">
+      <div><label>Winner Text</label><input type="color" value="${config.winnerTextColor}" oninput="updateConfig('winnerTextColor',this.value)"></div>
+      <div><label>Winner BG</label><input type="color" value="${rgbaToHex(config.winnerBgColor)}" oninput="updateConfig('winnerBgColor',this.value)"></div>
+    </div>
+    <div class="setting-row">
+      <label>Font Size: <span class="range-val">${config.winnerFontSize}px</span></label>
+      <input type="range" min="20" max="96" step="2" value="${config.winnerFontSize}" oninput="updateConfig('winnerFontSize',+this.value);this.previousElementSibling.querySelector('.range-val').textContent=this.value+'px'">
+    </div>
+  </div>
+
+  <div class="settings-group">
+    <h3>Sounds</h3>
+    <div class="setting-row">
+      <label>Tick Sound (plays on each segment pass)</label>
+      <div class="img-upload">
+        ${config.tickSound ? `<span style="color:var(--success);font-size:12px">Loaded</span>` : ''}
+        <div class="img-upload-btn" onclick="triggerTickUpload()">${config.tickSound ? 'Change Sound' : '+ Upload Sound'}</div>
+        ${config.tickSound ? `<button class="btn btn-sm btn-danger" onclick="clearTickSound()">✕</button>` : ''}
+      </div>
+      <div class="hint">Short click/tick sound. MP3 or OGG, keep under 1 second.</div>
+    </div>
+    ${config.tickSound ? `
+    <div class="setting-row">
+      <label>Tick Volume: <span class="range-val">${Math.round(config.tickVolume * 100)}%</span></label>
+      <input type="range" min="0" max="1" step="0.05" value="${config.tickVolume}" oninput="updateConfig('tickVolume',+this.value);this.previousElementSibling.querySelector('.range-val').textContent=Math.round(this.value*100)+'%'">
+    </div>` : ''}
+    <div class="setting-row">
+      <label>Win Sound (plays when winner is shown)</label>
+      <div class="img-upload">
+        ${config.winSound ? `<span style="color:var(--success);font-size:12px">Loaded</span>` : ''}
+        <div class="img-upload-btn" onclick="triggerWinUpload()">${config.winSound ? 'Change Sound' : '+ Upload Sound'}</div>
+        ${config.winSound ? `<button class="btn btn-sm btn-danger" onclick="clearWinSound()">✕</button>` : ''}
+      </div>
+    </div>
+    ${config.winSound ? `
+    <div class="setting-row">
+      <label>Win Volume: <span class="range-val">${Math.round(config.winVolume * 100)}%</span></label>
+      <input type="range" min="0" max="1" step="0.05" value="${config.winVolume}" oninput="updateConfig('winVolume',+this.value);this.previousElementSibling.querySelector('.range-val').textContent=Math.round(this.value*100)+'%'">
+    </div>` : ''}
+  </div>`;
+}
+function addSegment() {
+  const idx = segments.length;
+  let color = config.useAlternatingColors ? (idx % 2 === 0 ? config.color1 : config.color2) : randomColor();
+  segments.push({ name: `Option ${idx + 1}`, color, image: null });
+  editingIndex = idx;
+  renderPanel();
+  drawPreview();
+}
+
+function removeSeg(i) {
+  if (segments.length <= 2) return alert('Minimum 2 segments required.');
+  segments.splice(i, 1);
+  delete loadedImages[i];
+  // Rebuild loadedImages indices
+  const newImgs = {};
+  segments.forEach((s, idx) => {
+    if (s.image) {
+      // Re-load image for new index if needed
+      const img = new Image();
+      img.src = s.image;
+      newImgs[idx] = img;
+    }
+  });
+  loadedImages = newImgs;
+  if (editingIndex === i) editingIndex = -1;
+  else if (editingIndex > i) editingIndex--;
+  renderPanel();
+  drawPreview();
+}
+
+function moveSeg(i, dir) {
+  const j = i + dir;
+  if (j < 0 || j >= segments.length) return;
+  [segments[i], segments[j]] = [segments[j], segments[i]];
+  // Swap loaded images
+  const tmp = loadedImages[i];
+  loadedImages[i] = loadedImages[j];
+  loadedImages[j] = tmp;
+  if (editingIndex === i) editingIndex = j;
+  else if (editingIndex === j) editingIndex = i;
+  renderPanel();
+  drawPreview();
+}
+
+function toggleEdit(i) {
+  editingIndex = editingIndex === i ? -1 : i;
+  renderPanel();
+}
+
+function updateSeg(i, field, value) {
+  segments[i][field] = value;
+  if (field === 'name') {
+    // Update the name display without full re-render
+    const nameEl = document.querySelectorAll('.seg-name')[i];
+    if (nameEl) nameEl.textContent = value;
+  }
+  drawPreview();
+}
+
+function updateConfig(key, value) {
+  config[key] = value;
+  if (key === 'useAlternatingColors' || key === 'color1' || key === 'color2') {
+    if (config.useAlternatingColors) {
+      segments.forEach((seg, i) => seg.color = i % 2 === 0 ? config.color1 : config.color2);
+    }
+    renderPanel();
+  }
+  drawPreview();
+}
+
+// ===================== IMAGE HANDLING =====================
+function triggerImgUpload(i) {
+  currentImgTarget = i;
+  document.getElementById('imgInput').click();
+}
+
+document.getElementById('imgInput').addEventListener('change', function(e) {
+  const file = e.target.files[0];
+  if (!file || currentImgTarget < 0) return;
+  const reader = new FileReader();
+  reader.onload = function(ev) {
+    resizeImage(ev.target.result, 256, function(resized) {
+      segments[currentImgTarget].image = resized;
+      const img = new Image();
+      img.onload = () => { loadedImages[currentImgTarget] = img; drawPreview(); };
+      img.src = resized;
+      renderPanel();
+    });
+  };
+  reader.readAsDataURL(file);
+  this.value = '';
+});
+
+function clearImage(i) {
+  segments[i].image = null;
+  delete loadedImages[i];
+  renderPanel();
+  drawPreview();
+}
+
+function resizeImage(dataUrl, maxSize, callback) {
+  const img = new Image();
+  img.onload = function() {
+    const c = document.createElement('canvas');
+    let w = img.width, h = img.height;
+    if (w > maxSize || h > maxSize) {
+      if (w > h) { h = Math.round(h * maxSize / w); w = maxSize; }
+      else { w = Math.round(w * maxSize / h); h = maxSize; }
+    }
+    c.width = w; c.height = h;
+    c.getContext('2d').drawImage(img, 0, 0, w, h);
+    callback(c.toDataURL('image/png'));
+  };
+  img.src = dataUrl;
+}
+
+// Center image handling
+function triggerCenterImgUpload() {
+  document.getElementById('centerImgInput').click();
+}
+
+document.getElementById('centerImgInput').addEventListener('change', function(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = function(ev) {
+    resizeImage(ev.target.result, 256, function(resized) {
+      config.centerImage = resized;
+      config.centerText = '';
+      const img = new Image();
+      img.onload = () => { centerImageObj = img; drawPreview(); };
+      img.src = resized;
+      renderPanel();
+    });
+  };
+  reader.readAsDataURL(file);
+  this.value = '';
+});
+
+function clearCenterImage() {
+  config.centerImage = null;
+  centerImageObj = null;
+  renderPanel();
+  drawPreview();
+}
+
+// ===================== AUDIO HANDLING =====================
+function triggerTickUpload() { document.getElementById('tickSoundInput').click(); }
+function triggerWinUpload() { document.getElementById('winSoundInput').click(); }
+
+document.getElementById('tickSoundInput').addEventListener('change', function(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = function(ev) {
+    config.tickSound = ev.target.result;
+    initTickPool();
+    renderPanel();
+  };
+  reader.readAsDataURL(file);
+  this.value = '';
+});
+
+document.getElementById('winSoundInput').addEventListener('change', function(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = function(ev) {
+    config.winSound = ev.target.result;
+    winAudio = new Audio(config.winSound);
+    renderPanel();
+  };
+  reader.readAsDataURL(file);
+  this.value = '';
+});
+
+function clearTickSound() {
+  config.tickSound = null;
+  tickAudioPool = [];
+  renderPanel();
+}
+
+function clearWinSound() {
+  config.winSound = null;
+  winAudio = null;
+  renderPanel();
+}
+
+function initTickPool() {
+  tickAudioPool = [];
+  if (!config.tickSound) return;
+  for (let i = 0; i < 8; i++) {
+    const a = new Audio(config.tickSound);
+    a.volume = config.tickVolume;
+    tickAudioPool.push(a);
+  }
+  tickPoolIdx = 0;
+}
+
+function playTick() {
+  if (tickAudioPool.length === 0) return;
+  const a = tickAudioPool[tickPoolIdx];
+  a.volume = config.tickVolume;
+  a.currentTime = 0;
+  a.play().catch(function(){});
+  tickPoolIdx = (tickPoolIdx + 1) % tickAudioPool.length;
+}
+
+function playWin() {
+  if (!winAudio && config.winSound) winAudio = new Audio(config.winSound);
+  if (!winAudio) return;
+  winAudio.volume = config.winVolume;
+  winAudio.currentTime = 0;
+  winAudio.play().catch(function(){});
+}
+
+function getCurrentSegment(rotation) {
+  if (segments.length === 0) return -1;
+  const segDeg = 360 / segments.length;
+  const ptrDeg = { right: 0, top: 270, left: 180, bottom: 90 }[config.pointerPosition] || 0;
+  const rotDeg = (rotation * 180 / Math.PI) % 360;
+  return Math.floor((((ptrDeg - rotDeg) % 360 + 360) % 360) / segDeg);
+}
+
+// ===================== CANVAS RENDERING =====================
+function drawPreview() {
+  drawWheelToCanvas(ctx, canvas.width, canvas.height, segments, loadedImages, previewRotation, config);
+}
+
+function drawWheelToCanvas(ctx, w, h, segs, imgs, rotation, cfg) {
+  const size = Math.min(w, h);
+  const cx = w / 2, cy = h / 2;
+  const padding = 30;
+  const radius = size / 2 - padding;
+  if (segs.length === 0) return;
+  const segAngle = (2 * Math.PI) / segs.length;
+
+  ctx.clearRect(0, 0, w, h);
+
+  // --- Draw rotated wheel ---
+  ctx.save();
+  ctx.translate(cx, cy);
+  ctx.rotate(rotation);
+  ctx.translate(-cx, -cy);
+
+  // Outer circle shadow
+  ctx.beginPath();
+  ctx.arc(cx, cy, radius + 3, 0, Math.PI * 2);
+  ctx.fillStyle = 'rgba(0,0,0,0.3)';
+  ctx.fill();
+
+  // Segments
+  segs.forEach((seg, i) => {
+    const start = i * segAngle;
+    const end = start + segAngle;
+
+    ctx.beginPath();
+    ctx.moveTo(cx, cy);
+    ctx.arc(cx, cy, radius, start, end);
+    ctx.closePath();
+    ctx.fillStyle = seg.color;
+    ctx.fill();
+
+    // Border
+    if (cfg.borderWidth > 0) {
+      ctx.strokeStyle = cfg.segBorderColor;
+      ctx.lineWidth = cfg.borderWidth;
+      ctx.stroke();
+    }
+
+    // Image
+    if (imgs[i]) {
+      ctx.save();
+      ctx.beginPath();
+      ctx.moveTo(cx, cy);
+      ctx.arc(cx, cy, radius, start, end);
+      ctx.closePath();
+      ctx.clip();
+
+      const mid = start + segAngle / 2;
+      const dist = radius * 0.58;
+      const ix = cx + Math.cos(mid) * dist;
+      const iy = cy + Math.sin(mid) * dist;
+      // Fit image preserving aspect ratio
+      const arcWidth = 2 * radius * Math.sin(segAngle / 2) * 0.75;
+      const maxDim = Math.min(radius * 0.55, arcWidth);
+      const natW = imgs[i].naturalWidth || imgs[i].width || 1;
+      const natH = imgs[i].naturalHeight || imgs[i].height || 1;
+      const scale = Math.min(maxDim / natW, maxDim / natH);
+      const iw = natW * scale;
+      const ih = natH * scale;
+
+      ctx.drawImage(imgs[i], ix - iw / 2, iy - ih / 2, iw, ih);
+      ctx.restore();
+    }
+  });
+
+  // Outer ring
+  ctx.beginPath();
+  ctx.arc(cx, cy, radius, 0, Math.PI * 2);
+  ctx.strokeStyle = cfg.wheelBorderColor || '#fff';
+  ctx.lineWidth = 3;
+  ctx.stroke();
+
+  // Center circle
+  const cr = radius * 0.13;
+  ctx.beginPath();
+  ctx.arc(cx, cy, cr, 0, Math.PI * 2);
+  ctx.fillStyle = cfg.centerColor;
+  ctx.fill();
+  ctx.strokeStyle = cfg.wheelBorderColor || '#fff';
+  ctx.lineWidth = 2;
+  ctx.stroke();
+
+  // Center image (clipped to circle)
+  if (centerImageObj) {
+    ctx.save();
+    ctx.beginPath();
+    ctx.arc(cx, cy, cr, 0, Math.PI * 2);
+    ctx.closePath();
+    ctx.clip();
+    const ciDim = cr * 2;
+    ctx.drawImage(centerImageObj, cx - cr, cy - cr, ciDim, ciDim);
+    ctx.restore();
+    // Re-draw circle border on top of image
+    ctx.beginPath();
+    ctx.arc(cx, cy, cr, 0, Math.PI * 2);
+    ctx.strokeStyle = cfg.wheelBorderColor || '#fff';
+    ctx.lineWidth = 2;
+    ctx.stroke();
+  }
+
+  // Center text (only if no center image)
+  if (cfg.centerText && !centerImageObj) {
+    ctx.fillStyle = '#333';
+    ctx.font = `bold ${Math.round(cr * 1.1)}px ${getComputedStyle(document.body).fontFamily}`;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(cfg.centerText, cx, cy);
+  }
+
+  ctx.restore(); // un-rotate
+
+  // --- Fixed pointer ---
+  drawPointer(ctx, cx, cy, radius, cfg);
+}
+
+function drawPointer(ctx, cx, cy, radius, cfg) {
+  const pos = cfg.pointerPosition || 'right';
+  const pSize = 22;
+  let px, py, angle;
+
+  switch (pos) {
+    case 'right':  px = cx + radius + 6; py = cy; angle = Math.PI; break;
+    case 'left':   px = cx - radius - 6; py = cy; angle = 0; break;
+    case 'top':    px = cx; py = cy - radius - 6; angle = Math.PI / 2; break;
+    case 'bottom': px = cx; py = cy + radius + 6; angle = -Math.PI / 2; break;
+  }
+
+  ctx.save();
+  ctx.translate(px, py);
+  ctx.rotate(angle);
+
+  // Shadow
+  ctx.beginPath();
+  ctx.moveTo(2, -pSize / 2 - 2);
+  ctx.lineTo(pSize + 4, 2);
+  ctx.lineTo(2, pSize / 2 + 2);
+  ctx.closePath();
+  ctx.fillStyle = 'rgba(0,0,0,0.3)';
+  ctx.fill();
+
+  // Pointer triangle
+  ctx.beginPath();
+  ctx.moveTo(0, -pSize / 2);
+  ctx.lineTo(pSize, 0);
+  ctx.lineTo(0, pSize / 2);
+  ctx.closePath();
+  ctx.fillStyle = cfg.pointerColor || '#fff';
+  ctx.fill();
+  ctx.strokeStyle = cfg.pointerBorderColor || '#000';
+  ctx.lineWidth = 2;
+  ctx.stroke();
+
+  ctx.restore();
+}
+
+// ===================== SPIN ANIMATION =====================
+function testSpin() {
+  if (isSpinning || segments.length < 2) return;
+  isSpinning = true;
+  winnerEl.classList.remove('show');
+  lastTickSeg = getCurrentSegment(previewRotation);
+
+  const winnerIndex = Math.floor(Math.random() * segments.length);
+  const segAngle = 360 / segments.length;
+  const fullRotations = config.minRotations + Math.floor(Math.random() * (config.maxRotations - config.minRotations + 1));
+  const randFrac = 0.2 + Math.random() * 0.6;
+  const segTarget = winnerIndex * segAngle + segAngle * randFrac;
+
+  const pointerDeg = { right: 0, top: 270, left: 180, bottom: 90 }[config.pointerPosition] || 0;
+  const startRot = previewRotation;
+  const startRotNormDeg = ((startRot * 180 / Math.PI) % 360 + 360) % 360;
+  const totalDeg = fullRotations * 360 + pointerDeg - segTarget - startRotNormDeg;
+  const totalRad = totalDeg * Math.PI / 180;
+  const startTime = performance.now();
+
+  function animate(now) {
+    const elapsed = now - startTime;
+    const progress = Math.min(elapsed / config.spinDuration, 1);
+    const eased = 1 - Math.pow(1 - progress, 4);
+    previewRotation = startRot + totalRad * eased;
+    drawPreview();
+
+    // Tick sound on segment crossing
+    const curSeg = getCurrentSegment(previewRotation);
+    if (curSeg !== lastTickSeg) {
+      playTick();
+      lastTickSeg = curSeg;
+    }
+
+    if (progress < 1) {
+      animFrameId = requestAnimationFrame(animate);
+    } else {
+      isSpinning = false;
+      if (config.showWinner) {
+        winnerEl.textContent = segments[winnerIndex].name;
+        winnerEl.classList.add('show');
+        playWin();
+        setTimeout(() => winnerEl.classList.remove('show'), config.winnerDuration);
+      }
+    }
+  }
+  animFrameId = requestAnimationFrame(animate);
+}
+
+function resetWheel() {
+  if (animFrameId) cancelAnimationFrame(animFrameId);
+  isSpinning = false;
+  previewRotation = 0;
+  winnerEl.classList.remove('show');
+  drawPreview();
+}
+
+// ===================== EXPORT =====================
+function exportWheel() {
+  if (segments.length < 2) return alert('Add at least 2 segments.');
+  const name = prompt('Filename:', 'stream-wheel');
+  if (name === null) return;
+  const safeName = (name.trim() || 'stream-wheel').replace(/[^\w\-. ]/g, '');
+  const data = { segments: segments.map(s => ({...s})), config: {...config} };
+  const html = generateWheelHTML(data);
+  const blob = new Blob([html], { type: 'text/html' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = safeName.endsWith('.html') ? safeName : safeName + '.html';
+  a.click();
+  URL.revokeObjectURL(a.href);
+}
+
+function generateWheelHTML(data) {
+  // Build HTML via concatenation to avoid closing-script-tag inside a script block
+  // which causes the HTML parser to prematurely close the outer script element
+  var S = '\x3cscript';  // <script  (invisible to HTML parser)
+  var SE = '\x3c/script>'; // closing script tag (invisible to HTML parser)
+  return '<!DOCTYPE html>\n<html lang="en">\n<head>\n<meta charset="UTF-8">\n<title>Stream Wheel</title>\n<style>\n'
++ '*{margin:0;padding:0;box-sizing:border-box}\n'
++ 'html,body{width:100%;height:100%;overflow:hidden;background:transparent;font-family:\'Segoe UI\',\'Helvetica Neue\',Arial,sans-serif}\n'
++ '#wrap{width:100%;height:100%;display:flex;align-items:center;justify-content:center;position:relative}\n'
++ 'canvas{display:block}\n'
++ '#winner{position:absolute;bottom:8%;left:50%;transform:translateX(-50%);padding:12px 36px;border-radius:12px;font-weight:700;opacity:0;transition:opacity .4s;pointer-events:none;white-space:nowrap;text-align:center;z-index:10;backdrop-filter:blur(8px);border:2px solid}\n'
++ '#winner.show{opacity:1}\n'
++ '</style>\n</head>\n<body>\n<div id="wrap">\n<canvas id="wheel"></canvas>\n<div id="winner"></div>\n</div>\n'
++ S + ' id="wheel-data" type="application/json">' + JSON.stringify(data) + SE + '\n'
++ S + '>\n'
++ '(function(){\n'
++ '  var raw = JSON.parse(document.getElementById("wheel-data").textContent);\n'
++ '  var segs = raw.segments;\n'
++ '  var cfg = raw.config;\n'
++ '  var canvas = document.getElementById("wheel");\n'
++ '  var ctx = canvas.getContext("2d");\n'
++ '  var winEl = document.getElementById("winner");\n'
++ '  winEl.style.background = cfg.winnerBgColor || "rgba(0,0,0,0.85)";\n'
++ '  winEl.style.color = cfg.winnerTextColor || "#00d4ff";\n'
++ '  winEl.style.fontSize = (cfg.winnerFontSize || 48) + "px";\n'
++ '  winEl.style.borderColor = cfg.winnerTextColor || "#00d4ff";\n'
++ '  function resize() {\n'
++ '    var s = Math.min(window.innerWidth, window.innerHeight);\n'
++ '    canvas.width = s; canvas.height = s;\n'
++ '  }\n'
++ '  resize();\n'
++ '  window.addEventListener("resize", function(){ resize(); draw(); });\n'
++ '  var imgs = {};\n'
++ '  var centerImg = null;\n'
++ '  var toLoad = 0, loaded = 0;\n'
++ '  segs.forEach(function(s, i){ if (s.image) toLoad++; });\n'
++ '  if (cfg.centerImage) toLoad++;\n'
++ '  if (toLoad === 0) ready();\n'
++ '  else {\n'
++ '    segs.forEach(function(s, i){\n'
++ '      if (s.image) {\n'
++ '        var img = new Image();\n'
++ '        img.onload = function(){ imgs[i] = img; loaded++; if (loaded >= toLoad) ready(); };\n'
++ '        img.onerror = function(){ loaded++; if (loaded >= toLoad) ready(); };\n'
++ '        img.src = s.image;\n'
++ '      }\n'
++ '    });\n'
++ '    if (cfg.centerImage) {\n'
++ '      var ci = new Image();\n'
++ '      ci.onload = function(){ centerImg = ci; loaded++; if (loaded >= toLoad) ready(); };\n'
++ '      ci.onerror = function(){ loaded++; if (loaded >= toLoad) ready(); };\n'
++ '      ci.src = cfg.centerImage;\n'
++ '    }\n'
++ '  }\n'
++ '  var rotation = 0;\n'
++ '  var spinning = false;\n'
++ '  var tickPool = [], tickIdx = 0, lastTSeg = -1;\n'
++ '  var winAud = null;\n'
++ '  function initAudio() {\n'
++ '    tickPool = [];\n'
++ '    if (cfg.tickSound) {\n'
++ '      for (var i = 0; i < 8; i++) {\n'
++ '        var a = new Audio(cfg.tickSound);\n'
++ '        a.volume = cfg.tickVolume || 0.5;\n'
++ '        tickPool.push(a);\n'
++ '      }\n'
++ '    }\n'
++ '    if (cfg.winSound) winAud = new Audio(cfg.winSound);\n'
++ '  }\n'
++ '  function pTick() {\n'
++ '    if (tickPool.length === 0) return;\n'
++ '    var a = tickPool[tickIdx];\n'
++ '    a.volume = cfg.tickVolume || 0.5;\n'
++ '    a.currentTime = 0;\n'
++ '    a.play().catch(function(){});\n'
++ '    tickIdx = (tickIdx + 1) % tickPool.length;\n'
++ '  }\n'
++ '  function pWin() {\n'
++ '    if (!winAud) return;\n'
++ '    winAud.volume = cfg.winVolume || 0.8;\n'
++ '    winAud.currentTime = 0;\n'
++ '    winAud.play().catch(function(){});\n'
++ '  }\n'
++ '  function getCurSeg(rot) {\n'
++ '    var sd = 360 / segs.length;\n'
++ '    var pd = {right:0,top:270,left:180,bottom:90}[cfg.pointerPosition] || 0;\n'
++ '    var rd = (rot * 180 / Math.PI) % 360;\n'
++ '    return Math.floor((((pd - rd) % 360 + 360) % 360) / sd);\n'
++ '  }\n'
++ '  initAudio();\n'
++ '  function draw() {\n'
++ '    var w = canvas.width, h = canvas.height;\n'
++ '    var size = Math.min(w, h);\n'
++ '    var cx = w / 2, cy = h / 2;\n'
++ '    var padding = Math.round(size * 0.058);\n'
++ '    var radius = size / 2 - padding;\n'
++ '    var segAngle = (2 * Math.PI) / segs.length;\n'
++ '    ctx.clearRect(0, 0, w, h);\n'
++ '    ctx.save();\n'
++ '    ctx.translate(cx, cy);\n'
++ '    ctx.rotate(rotation);\n'
++ '    ctx.translate(-cx, -cy);\n'
++ '    ctx.beginPath();\n'
++ '    ctx.arc(cx, cy, radius + 3, 0, Math.PI * 2);\n'
++ '    ctx.fillStyle = "rgba(0,0,0,0.25)";\n'
++ '    ctx.fill();\n'
++ '    segs.forEach(function(seg, i) {\n'
++ '      var start = i * segAngle;\n'
++ '      var end = start + segAngle;\n'
++ '      ctx.beginPath();\n'
++ '      ctx.moveTo(cx, cy);\n'
++ '      ctx.arc(cx, cy, radius, start, end);\n'
++ '      ctx.closePath();\n'
++ '      ctx.fillStyle = seg.color;\n'
++ '      ctx.fill();\n'
++ '      if ((cfg.borderWidth || 0) > 0) {\n'
++ '        ctx.strokeStyle = cfg.segBorderColor || "rgba(255,255,255,0.25)";\n'
++ '        ctx.lineWidth = cfg.borderWidth;\n'
++ '        ctx.stroke();\n'
++ '      }\n'
++ '      if (imgs[i]) {\n'
++ '        ctx.save();\n'
++ '        ctx.beginPath();\n'
++ '        ctx.moveTo(cx, cy);\n'
++ '        ctx.arc(cx, cy, radius, start, end);\n'
++ '        ctx.closePath();\n'
++ '        ctx.clip();\n'
++ '        var mid = start + segAngle / 2;\n'
++ '        var dist = radius * 0.58;\n'
++ '        var ix = cx + Math.cos(mid) * dist;\n'
++ '        var iy = cy + Math.sin(mid) * dist;\n'
++ '        var arcW = 2 * radius * Math.sin(segAngle / 2) * 0.75;\n'
++ '        var maxD = Math.min(radius * 0.55, arcW);\n'
++ '        var nw = imgs[i].naturalWidth || imgs[i].width || 1;\n'
++ '        var nh = imgs[i].naturalHeight || imgs[i].height || 1;\n'
++ '        var sc = Math.min(maxD / nw, maxD / nh);\n'
++ '        var iw = nw * sc, ih = nh * sc;\n'
++ '        ctx.drawImage(imgs[i], ix - iw / 2, iy - ih / 2, iw, ih);\n'
++ '        ctx.restore();\n'
++ '      }\n'
++ '    });\n'
++ '    ctx.beginPath();\n'
++ '    ctx.arc(cx, cy, radius, 0, Math.PI * 2);\n'
++ '    ctx.strokeStyle = cfg.wheelBorderColor || "#fff";\n'
++ '    ctx.lineWidth = 3;\n'
++ '    ctx.stroke();\n'
++ '    var cr = radius * 0.13;\n'
++ '    ctx.beginPath();\n'
++ '    ctx.arc(cx, cy, cr, 0, Math.PI * 2);\n'
++ '    ctx.fillStyle = cfg.centerColor || "#fff";\n'
++ '    ctx.fill();\n'
++ '    ctx.strokeStyle = cfg.wheelBorderColor || "#fff";\n'
++ '    ctx.lineWidth = 2;\n'
++ '    ctx.stroke();\n'
++ '    if (centerImg) {\n'
++ '      ctx.save();\n'
++ '      ctx.beginPath();\n'
++ '      ctx.arc(cx, cy, cr, 0, Math.PI * 2);\n'
++ '      ctx.closePath();\n'
++ '      ctx.clip();\n'
++ '      var ciD = cr * 2;\n'
++ '      ctx.drawImage(centerImg, cx - cr, cy - cr, ciD, ciD);\n'
++ '      ctx.restore();\n'
++ '      ctx.beginPath();\n'
++ '      ctx.arc(cx, cy, cr, 0, Math.PI * 2);\n'
++ '      ctx.strokeStyle = cfg.wheelBorderColor || "#fff";\n'
++ '      ctx.lineWidth = 2;\n'
++ '      ctx.stroke();\n'
++ '    }\n'
++ '    if (cfg.centerText && !centerImg) {\n'
++ '      ctx.fillStyle = "#333";\n'
++ '      ctx.font = "bold " + Math.round(cr * 1.1) + "px sans-serif";\n'
++ '      ctx.textAlign = "center";\n'
++ '      ctx.textBaseline = "middle";\n'
++ '      ctx.fillText(cfg.centerText, cx, cy);\n'
++ '    }\n'
++ '    ctx.restore();\n'
++ '    var pos = cfg.pointerPosition || "right";\n'
++ '    var pS = Math.round(size * 0.042);\n'
++ '    var px, py, angle;\n'
++ '    switch (pos) {\n'
++ '      case "right":  px = cx + radius + 6; py = cy; angle = Math.PI; break;\n'
++ '      case "left":   px = cx - radius - 6; py = cy; angle = 0; break;\n'
++ '      case "top":    px = cx; py = cy - radius - 6; angle = Math.PI / 2; break;\n'
++ '      case "bottom": px = cx; py = cy + radius + 6; angle = -Math.PI / 2; break;\n'
++ '    }\n'
++ '    ctx.save();\n'
++ '    ctx.translate(px, py);\n'
++ '    ctx.rotate(angle);\n'
++ '    ctx.beginPath();\n'
++ '    ctx.moveTo(0, -pS);\n'
++ '    ctx.lineTo(pS * 1.1, 0);\n'
++ '    ctx.lineTo(0, pS);\n'
++ '    ctx.closePath();\n'
++ '    ctx.fillStyle = cfg.pointerColor || "#fff";\n'
++ '    ctx.fill();\n'
++ '    ctx.strokeStyle = cfg.pointerBorderColor || "#000";\n'
++ '    ctx.lineWidth = 2;\n'
++ '    ctx.stroke();\n'
++ '    ctx.restore();\n'
++ '  }\n'
++ '  function spin() {\n'
++ '    if (spinning || segs.length < 2) return;\n'
++ '    spinning = true;\n'
++ '    winEl.classList.remove("show");\n'
++ '    lastTSeg = getCurSeg(rotation);\n'
++ '    var winIdx = Math.floor(Math.random() * segs.length);\n'
++ '    var segDeg = 360 / segs.length;\n'
++ '    var fullRot = (cfg.minRotations || 5) + Math.floor(Math.random() * ((cfg.maxRotations || 10) - (cfg.minRotations || 5) + 1));\n'
++ '    var randF = 0.2 + Math.random() * 0.6;\n'
++ '    var segTgt = winIdx * segDeg + segDeg * randF;\n'
++ '    var ptrDeg = {right:0,top:270,left:180,bottom:90}[cfg.pointerPosition] || 0;\n'
++ '    var startRot = rotation;\n'
++ '    var startRotNormDeg = ((startRot * 180 / Math.PI) % 360 + 360) % 360;\n'
++ '    var totalRad = (fullRot * 360 + ptrDeg - segTgt - startRotNormDeg) * Math.PI / 180;\n'
++ '    var startTime = performance.now();\n'
++ '    var dur = cfg.spinDuration || 5000;\n'
++ '    function anim(now) {\n'
++ '      var t = Math.min((now - startTime) / dur, 1);\n'
++ '      var e = 1 - Math.pow(1 - t, 4);\n'
++ '      rotation = startRot + totalRad * e;\n'
++ '      draw();\n'
++ '      var cs = getCurSeg(rotation);\n'
++ '      if (cs !== lastTSeg) { pTick(); lastTSeg = cs; }\n'
++ '      if (t < 1) requestAnimationFrame(anim);\n'
++ '      else {\n'
++ '        spinning = false;\n'
++ '        if (cfg.showWinner) {\n'
++ '          winEl.textContent = segs[winIdx].name;\n'
++ '          winEl.classList.add("show");\n'
++ '          pWin();\n'
++ '          if (cfg.winnerDuration > 0) setTimeout(function(){ winEl.classList.remove("show"); }, cfg.winnerDuration);\n'
++ '        }\n'
++ '      }\n'
++ '    }\n'
++ '    requestAnimationFrame(anim);\n'
++ '  }\n'
++ '  function ready() {\n'
++ '    draw();\n'
++ '    var delay = cfg.spinDelay || 500;\n'
++ '    var mode = cfg.triggerMode || "load";\n'
++ '    if (mode === "load" || mode === "both") {\n'
++ '      setTimeout(spin, delay);\n'
++ '    }\n'
++ '    if (typeof window.obsstudio !== "undefined") {\n'
++ '      window.obsstudio.onVisibilityChange = function(visible) {\n'
++ '        if (visible && (mode === "visibility" || mode === "both")) {\n'
++ '          rotation = 0;\n'
++ '          winEl.classList.remove("show");\n'
++ '          setTimeout(spin, delay);\n'
++ '        }\n'
++ '      };\n'
++ '    }\n'
++ '    document.addEventListener("visibilitychange", function() {\n'
++ '      if (!document.hidden && (mode === "visibility" || mode === "both")) {\n'
++ '        if (typeof window.obsstudio !== "undefined") return;\n'
++ '        rotation = 0;\n'
++ '        winEl.classList.remove("show");\n'
++ '        setTimeout(spin, delay);\n'
++ '      }\n'
++ '    });\n'
++ '  }\n'
++ '})();\n'
++ SE + '\n</body>\n</html>';
+}
+
+// ===================== IMPORT =====================
+function importWheel() {
+  document.getElementById('importInput').click();
+}
+
+document.getElementById('importInput').addEventListener('change', function(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = function(ev) {
+    try {
+      const html = ev.target.result;
+      const parser = new DOMParser();
+      const doc = parser.parseFromString(html, 'text/html');
+      const dataEl = doc.getElementById('wheel-data');
+      if (!dataEl) throw new Error('No wheel data found in this file.');
+      const data = JSON.parse(dataEl.textContent);
+      segments = data.segments || [];
+      config = { ...config, ...(data.config || {}) };
+      // Reload images
+      loadedImages = {};
+      centerImageObj = null;
+      segments.forEach((seg, i) => {
+        if (seg.image) {
+          const img = new Image();
+          img.onload = () => { loadedImages[i] = img; drawPreview(); };
+          img.src = seg.image;
+        }
+      });
+      if (config.centerImage) {
+        const ci = new Image();
+        ci.onload = () => { centerImageObj = ci; drawPreview(); };
+        ci.src = config.centerImage;
+      }
+      editingIndex = -1;
+      renderPanel();
+      drawPreview();
+    } catch (err) {
+      alert('Failed to load wheel: ' + err.message);
+    }
+  };
+  reader.readAsText(file);
+  this.value = '';
+});
+
+// ===================== UTILS =====================
+function esc(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+function randomColor() { return '#' + Math.floor(Math.random()*16777215).toString(16).padStart(6,'0'); }
+function rgbaToHex(c) {
+  if (c.startsWith('#')) return c.length <= 7 ? c : c.slice(0,7);
+  const m = c.match(/[\d.]+/g);
+  if (!m) return '#ffffff';
+  return '#' + [m[0],m[1],m[2]].map(x => parseInt(x).toString(16).padStart(2,'0')).join('');
+}
+
+// ===================== INIT =====================
+function init() {
+  // Load initial images
+  segments.forEach((seg, i) => {
+    if (seg.image) {
+      const img = new Image();
+      img.onload = () => { loadedImages[i] = img; drawPreview(); };
+      img.src = seg.image;
+    }
+  });
+  renderPanel();
+  drawPreview();
+}
+
+init();
+</script>
+</body>
+</html>
