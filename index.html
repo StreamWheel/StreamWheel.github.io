@@ -4,7 +4,7 @@
 <!-- Stream Wheel -->
 <!-- A nice solution for making spinning wheels on streams through OBS -->
 <!-- By StreamWheelDev -->
-<!-- Licensed under the MIT License. Full text as follows: -->
+<!-- Licensed under the MIT License. Full license text as follows: -->
 <!--
 MIT License
 
@@ -709,6 +709,22 @@ function drawWheelToCanvas(ctx, w, h, segs, imgs, rotation, cfg) {
 
       ctx.drawImage(imgs[i], ix - iw / 2, iy - ih / 2, iw, ih);
       ctx.restore();
+    } else if (seg.name) {
+      // Draw name text on segments without images
+      ctx.save();
+      const mid = start + segAngle / 2;
+      ctx.translate(cx, cy);
+      ctx.rotate(mid);
+      const maxTextW = radius * 0.65;
+      const fontSize = Math.min(Math.round(radius * 0.11), Math.round(segAngle * radius * 0.28));
+      ctx.font = `bold ${fontSize}px system-ui, sans-serif`;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillStyle = 'rgba(0,0,0,0.35)';
+      ctx.fillText(seg.name, radius * 0.58 + 1, 1, maxTextW);
+      ctx.fillStyle = '#fff';
+      ctx.fillText(seg.name, radius * 0.58, 0, maxTextW);
+      ctx.restore();
     }
   });
 
@@ -1014,6 +1030,21 @@ function generateWheelHTML(data) {
 + '        var iw = nw * sc, ih = nh * sc;\n'
 + '        ctx.drawImage(imgs[i], ix - iw / 2, iy - ih / 2, iw, ih);\n'
 + '        ctx.restore();\n'
++ '      } else if (seg.name) {\n'
++ '        ctx.save();\n'
++ '        var mid = start + segAngle / 2;\n'
++ '        ctx.translate(cx, cy);\n'
++ '        ctx.rotate(mid);\n'
++ '        var maxTW = radius * 0.65;\n'
++ '        var fs = Math.min(Math.round(radius * 0.11), Math.round(segAngle * radius * 0.28));\n'
++ '        ctx.font = "bold " + fs + "px system-ui, sans-serif";\n'
++ '        ctx.textAlign = "center";\n'
++ '        ctx.textBaseline = "middle";\n'
++ '        ctx.fillStyle = "rgba(0,0,0,0.35)";\n'
++ '        ctx.fillText(seg.name, radius * 0.58 + 1, 1, maxTW);\n'
++ '        ctx.fillStyle = "#fff";\n'
++ '        ctx.fillText(seg.name, radius * 0.58, 0, maxTW);\n'
++ '        ctx.restore();\n'
 + '      }\n'
 + '    });\n'
 + '    ctx.beginPath();\n'
@@ -1213,4 +1244,4 @@ function init() {
 init();
 </script>
 </body>
-</html>
+</html>`
