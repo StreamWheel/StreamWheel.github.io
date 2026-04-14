@@ -5,5 +5,5 @@ Once you export your .html, import it into OBS as a browser source. You can go f
 
 Enjoy! :)
 
-##License
+## License
 This project is licensed under the MIT License. Feel free to do whatever you want with this. [Full text is here.](LICENSE)
