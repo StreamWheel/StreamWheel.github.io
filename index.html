@@ -30,7 +30,7 @@ SOFTWARE.
 -->
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Stream Wheel Configurator</title>
+<title>StreamWheel</title>
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
 :root{
@@ -53,7 +53,7 @@ label{font-size:13px;color:var(--text2);font-weight:500;display:block;margin-bot
 .header h1{font-size:18px;font-weight:600;display:flex;align-items:center;gap:10px}
 .header h1 span{background:linear-gradient(135deg,var(--accent),var(--accent3));-webkit-background-clip:text;-webkit-text-fill-color:transparent}
 .header-actions{display:flex;gap:8px}
-.btn{padding:8px 16px;border-radius:var(--radius);font-weight:500;font-size:13px;display:flex;align-items:center;gap:6px}
+.btn{padding:8px 16px;border-radius:var(--radius);font-weight:500;font-size:13px;display:flex;align-items:center;gap:6px;text-decoration:none}
 .btn-primary{background:var(--accent);color:#000}
 .btn-primary:hover{background:#33ddff;transform:translateY(-1px)}
 .btn-secondary{background:var(--surface3);color:var(--text);border:1px solid var(--border)}
@@ -130,6 +130,7 @@ label{font-size:13px;color:var(--text2);font-weight:500;display:block;margin-bot
   <div class="header">
     <h1><span>Stream Wheel Builder</span></h1>
     <div class="header-actions">
+      <a class="btn btn-secondary" href="https://github.com/StreamWheel/StreamWheel.github.io" target="_blank" rel="noopener">Source Code</a>
       <button class="btn btn-secondary" onclick="importWheel()">Load Wheel</button>
       <button class="btn btn-primary" onclick="exportWheel()">Export Wheel</button>
     </div>
